@@ -1,0 +1,1 @@
+define("article:widget/ad/bottom-ads/bottom-ads.js",function(o,t,e){var i=o("common-jquery:widget/lib/jquery/jquery.js"),n=o("common-jquery:widget/js/logic/log/log.js"),d={init:function(){var o=i("#EC_l").find(".EC_tit").length;n.send(location.href,2019,{adCount:o})}};e.exports=d});

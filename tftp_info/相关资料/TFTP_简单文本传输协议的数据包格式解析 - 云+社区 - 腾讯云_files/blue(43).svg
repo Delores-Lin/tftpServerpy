@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>企业服务-16px(蓝)</title>
+    <g id="企业服务-16px(蓝)" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="安全管理sm-16px" fill="#444444" fill-rule="nonzero" opacity="0">
+            <rect id="Rectangle-Copy" x="0" y="0" width="16" height="16"></rect>
+        </g>
+        <path d="M11,4 L11,2 L5,2 L5,4 L11,4 Z M14,10 L9,10 L9,12 L7,12 L7,10 L2,10 L2,14 L14,14 L14,10 Z M14,6 L2,6 L2,8 L14,8 L14,6 Z M3,0 L13,0 L13,4 L16,4 L16,16 L0,16 L0,4 L3,4 L3,0 Z" id="形状结合" fill="#00A4FF"></path>
+    </g>
+</svg>

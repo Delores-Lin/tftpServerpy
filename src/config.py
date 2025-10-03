@@ -1,0 +1,34 @@
+# operation code
+OP_RRQ = 1
+OP_WRQ = 2
+OP_DATA = 3
+OP_ACK = 4
+OP_ERROR = 5
+
+# mode
+MODE_OCTET = "octet"
+
+# transmission config
+BLOCK_SIZE = 512
+TIMEOUT = 5
+MAX_RETRIES = 5
+
+# listen
+HOST = "0.0.0.0"
+PORT = 1069
+
+# root
+SERVER_ROOT = "tftp_root"
+
+# error code
+ERR_NOT_DEFINED = 0
+ERR_FILE_NOT_FOUND = 1
+ERR_ACCESS_DENIED = 2
+ERR_DISK_FULL = 3
+ERR_ILLEGAL_TFTP_OPERATION = 4
+ERR_UNKNOWN_TRANSFER_ID = 5
+ERR_FILE_ALREADY_EXISTS = 6
+ERR_NO_SUCH_USER = 7
+
+# debug
+DEBUG = True
