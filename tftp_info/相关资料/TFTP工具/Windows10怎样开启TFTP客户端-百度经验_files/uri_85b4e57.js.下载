@@ -1,1 +1,0 @@
-define("common-jquery:widget/js/util/uri/uri.js",function(e,r,c){var o={swfupload:"/html-webroot/static/exp-pc/common-jquery/swf/Uploader.swf",cyberplayer:"//exp-new.bdstatic.com/static/exp-pc/common-jquery/cyberplayer/cyberplayer.flash_c8642f2.swf"};c.exports=o});
