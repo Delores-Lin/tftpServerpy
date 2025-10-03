@@ -45,7 +45,7 @@ def build_error(code:int, message:str):
 # parse
 def parse_opcode(packet:bytes):
     if len(packet) < 2 :
-        raise PacketFormatError("Opcode Length Too Short")
+        raise PacketFormatError("Opcode Length Too Short ")
     opcode = struct.unpack('!H', packet[0:2])[0]
     return opcode
 
@@ -54,7 +54,7 @@ def parse_ack(packet:bytes):
         raise PacketFormatError("ACK Length Too Short")
     opcode = struct.unpack('!H', packet[0:2])[0]
     if int(opcode) != OP_ACK:
-        raise PacketFormatError("Not an ACK")
+        raise PacketFormatError(f"Not an ACK Opcode={opcode}")
     block_num = struct.unpack('!H', packet[2:4])[0]
     return block_num
 

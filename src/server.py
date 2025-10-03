@@ -3,7 +3,7 @@ import os
 import sys
 import traceback
 from typing import Tuple
-
+from handlers import handle_rrq, handle_wrq
 from config import (
     HOST, PORT, 
     BLOCK_SIZE,
@@ -44,9 +44,9 @@ def serve_forever():
                 session_sock.bind((HOST, 0))
 
                 if opcode == OP_RRQ:
-                    handle_rrq(session_sock, client_addr, basename)
+                    handle_rrq(session_sock, client_addr, basename, mode)
                 else:
-                    handle_wrq(session_sock, client_addr, basename)
+                    handle_wrq(session_sock, client_addr, basename, mode)
 
             except FileNotFoundError:
                 err = build_error(ERR_FILE_NOT_FOUND, "File Not Found")
@@ -71,14 +71,6 @@ def serve_forever():
             print(f"[MAIN] Loop Error: {e}")
             traceback.print_exc()
     print("[MAIN] Server Exiting")
-
-def handle_rrq(session_sock: socket.socket, client_addr: Tuple[str, int], basename:str):
-    print(f"[RRQ] start session {session_sock.getsockname()} -> {client_addr} file='{basename}'")
-    session_sock.close() 
-def handle_wrq(session_sock: socket.socket, client_addr: Tuple[str, int], basename: str):
-    print(f"[WRQ] start session {session_sock.getsockname()} -> {client_addr} file='{basename}'")
-    # 下一步才实现：发送 ACK(0)，循环接收 DATA 写入文件
-    session_sock.close()  # 暂时立即关闭
 
 
 if __name__ == "__main__":
