@@ -2,6 +2,7 @@ import struct
 import os
 import re
 from config import (OP_ACK,OP_DATA,OP_ERROR,OP_RRQ,OP_WRQ,BLOCK_SIZE)
+from config import (MODE_OCTET)
 
 # error
 class PacketFormatError(Exception):
@@ -22,6 +23,8 @@ def build_ack(block_num:int):
     return header
 
 def build_data(block_num:int, data):
+    if not(0 <= block_num <= 0xFFFF):
+        raise ValueError("Block Num Out of Range")
     if not isinstance(data, (bytes, bytearray)):
         raise TypeError("Data Must Be Bytes")
     if len(data) > BLOCK_SIZE:
@@ -83,6 +86,8 @@ def parse_rrq_wrq(packet:bytes):
     transfer_mode = transfer_mode.decode('ascii','ignore').lower()
     if not transfer_mode:
         raise UnsupportedModeError("Empty Mode Field")
+    if not is_supported_mode(transfer_mode):
+        raise UnsupportedModeError(f"Unsupported mode: {transfer_mode}")
     return opcode, filename, transfer_mode
 
 def parse_error(packet:bytes):
@@ -90,9 +95,26 @@ def parse_error(packet:bytes):
         raise PacketFormatError("Error Length Too Short")
     opcode = struct.unpack('!H', packet[0:2])[0]
     if opcode != OP_ERROR:
-        raise PacketFormatError("Not a Error")
+        raise PacketFormatError("Not an Error")
     err_code = struct.unpack('!H', packet[2:4])[0]
     if not(0 <= err_code <= 7):
         raise PacketFormatError("Wrong Error Code")
     err_message = packet[4:].rstrip(b'\x00').decode('ascii', 'ignore')
     return err_code, err_message
+
+
+def sanitize_filename(filename:str):
+    filename = filename.strip()
+    basename = os.path.basename(filename)
+    if not basename:
+        raise InvalidFilenameError("Filename Empty")
+    if ".." in basename :
+        raise InvalidFilenameError("Path Traversal Not Allowed")
+    if any(c in basename for c in ('\\','/')):
+        raise InvalidFilenameError("Path Separator Not Allowed")
+    if not re.match(r'^[A-Za-z0-9._-]+$', basename):
+        raise InvalidFilenameError("Illegal characters in filename")
+    return basename
+
+def is_supported_mode(mode:str):
+    return mode.lower() == MODE_OCTET
