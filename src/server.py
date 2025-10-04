@@ -107,6 +107,9 @@ def serve_forever():
                         build_error(ERR_ACCESS_DENIED, "Server Cannot Create"),
                         client_addr
                     )
+                    _session_sem.release()
+                    session_sock.close()
+                    continue
 
             except FileNotFoundError:
                 err = build_error(ERR_FILE_NOT_FOUND, "File Not Found")
