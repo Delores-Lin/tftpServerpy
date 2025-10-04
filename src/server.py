@@ -30,7 +30,7 @@ def serve_forever():
 
     while True:
         try:
-            data, client_addr = sock.recvfrom(1000)
+            data, client_addr = sock.recvfrom(1500)
             if not data:
                 continue
             try:

@@ -15,14 +15,14 @@ class InvalidFilenameError(Exception):
 
 
 # build
-def build_ack(block_num:int):
+def build_ack(block_num:int) -> bytes:
     if not(0 <= block_num <= 0xFFFF):
         raise ValueError("Block Num Out of Range")
     opcode = OP_ACK
     header = struct.pack('!HH',opcode,block_num)
     return header
 
-def build_data(block_num:int, data):
+def build_data(block_num:int, data) -> bytes:
     if not(0 <= block_num <= 0xFFFF):
         raise ValueError("Block Num Out of Range")
     if not isinstance(data, (bytes, bytearray)):
@@ -34,7 +34,7 @@ def build_data(block_num:int, data):
     packet = header + data
     return packet
 
-def build_error(code:int, message:str):
+def build_error(code:int, message:str) -> bytes:
     opcode = OP_ERROR
     err_code = code
     err_message = message.encode('ascii', 'replace')
@@ -43,13 +43,13 @@ def build_error(code:int, message:str):
 
 
 # parse
-def parse_opcode(packet:bytes):
+def parse_opcode(packet:bytes) -> int:
     if len(packet) < 2 :
         raise PacketFormatError("Opcode Length Too Short ")
     opcode = struct.unpack('!H', packet[0:2])[0]
     return opcode
 
-def parse_ack(packet:bytes):
+def parse_ack(packet:bytes) -> int:
     if len(packet) < 4:
         raise PacketFormatError("ACK Length Too Short")
     opcode = struct.unpack('!H', packet[0:2])[0]
@@ -58,7 +58,7 @@ def parse_ack(packet:bytes):
     block_num = struct.unpack('!H', packet[2:4])[0]
     return block_num
 
-def parse_data(packet:bytes):
+def parse_data(packet:bytes) -> tuple[int, bytes]:
     if len(packet) < 4 :
         raise PacketFormatError("Data Length Too Short")
     opcode = struct.unpack('!H', packet[0:2])[0]
@@ -68,7 +68,7 @@ def parse_data(packet:bytes):
     data = packet[4:]
     return block_num, data
 
-def parse_rrq_wrq(packet:bytes):
+def parse_rrq_wrq(packet:bytes) -> tuple[int, str, str]:
     if len(packet) < 4:
         raise PacketFormatError("Request Length Too Short")
     opcode = struct.unpack('!H', packet[0:2])[0]
@@ -90,7 +90,7 @@ def parse_rrq_wrq(packet:bytes):
         raise UnsupportedModeError(f"Unsupported mode: {transfer_mode}")
     return opcode, filename, transfer_mode
 
-def parse_error(packet:bytes):
+def parse_error(packet:bytes) -> tuple[int, str]:
     if len(packet) < 5:
         raise PacketFormatError("Error Length Too Short")
     opcode = struct.unpack('!H', packet[0:2])[0]
@@ -103,7 +103,7 @@ def parse_error(packet:bytes):
     return err_code, err_message
 
 
-def sanitize_filename(filename:str):
+def sanitize_filename(filename:str) -> str:
     filename = filename.strip()
     basename = os.path.basename(filename)
     if not basename:
@@ -116,5 +116,5 @@ def sanitize_filename(filename:str):
         raise InvalidFilenameError("Illegal characters in filename")
     return basename
 
-def is_supported_mode(mode:str):
+def is_supported_mode(mode:str) -> bool:
     return mode.lower() == MODE_OCTET
