@@ -8,14 +8,17 @@ OP_ERROR = 5
 # mode
 MODE_OCTET = "octet"
 
+# thred
+MAX_SESSIONS = 50
+
 # transmission config
 BLOCK_SIZE = 512
 TIMEOUT = 5
 MAX_RETRIES = 5
 
 # listen
-HOST = "0.0.0.0"
-PORT = 1069
+HOST = "localhost"
+PORT = 69
 
 # root
 SERVER_ROOT = "tftp_root"
