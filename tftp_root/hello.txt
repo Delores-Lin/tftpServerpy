@@ -1,0 +1,17 @@
+Hello TFTP!
+This is a small test file used to verify RRQ (download) and WRQ (upload) operations.
+
+Lines:
+1. Greeting line
+2. Purpose description
+3. Blank line
+4. List of points
+
+You can download this file using the provided test client:
+Example:
+  python tests/tftp_client_test.py rrq --host localhost --port 69 --remote hello.txt --local hello_copy.txt -v
+
+If you modify this file and upload it back under a new name you can verify WRQ:
+  python tests/tftp_client_test.py wrq --host localhost --port 69 --local tftp_root/hello.txt --remote hello_copy_from_client.txt -v
+
+File end.

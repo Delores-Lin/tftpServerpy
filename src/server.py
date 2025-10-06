@@ -24,6 +24,7 @@ from utils import (
 _session_sem = threading.BoundedSemaphore(MAX_SESSIONS)
 _active_lock = threading.Lock()
 _active_count = 0
+_shutdown = False
 
 def _run_session(opcode:int, session_sock:socket.socket, client_addr, basename:str, mode:str):
     global _active_count
@@ -35,11 +36,14 @@ def _run_session(opcode:int, session_sock:socket.socket, client_addr, basename:s
         else:
             handle_wrq(session_sock, client_addr, basename, mode)
     except Exception as e:
-        print(f"[SESSION] Error {client_addr} {basename}: {e}")
-        session_sock.sendto(
-            build_error(ERR_ILLEGAL_TFTP_OPERATION, "Session Error: {e}"),
-            client_addr
-        )
+        print(f"[SESSION] Error {client_addr} {basename}: {e!r}")
+        try:
+            session_sock.sendto(
+                build_error(ERR_ILLEGAL_TFTP_OPERATION, "Session Error: {e}"),
+                client_addr
+            )
+        except Exception as se:
+            print(f"[SESSION] Send error packet failed: {se}")
         traceback.print_exc()
     finally:
         with _active_lock:
@@ -48,6 +52,7 @@ def _run_session(opcode:int, session_sock:socket.socket, client_addr, basename:s
         session_sock.close()
 
 def serve_forever():
+    global _shutdown
         # 创建UDP套接字（IPv4）
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -55,11 +60,15 @@ def serve_forever():
         # 允许重新绑定一个处于某些中间状态或刚刚释放的本地地址/端口，
         # 防止程序重启时“Address already in use”
     sock.bind((HOST, PORT))
+    sock.settimeout(1.0)
     print(f"[MAIN] TFTP server is listening on {HOST}:{PORT}")
 
-    while True:
+    while not _shutdown:
         try:
-            data, client_addr = sock.recvfrom(1500)
+            try:
+                data, client_addr = sock.recvfrom(1500)
+            except socket.timeout:
+                continue
             if not data:
                 continue
             try:
