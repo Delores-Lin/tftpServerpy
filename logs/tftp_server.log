@@ -1,0 +1,4 @@
+2025-10-09 20:55:50 | ERROR | MainThread | tftp | 出现异常
+NoneType: None
+2025-10-09 20:55:59 | CRITICAL | MainThread | tftp | critical
+2025-10-09 20:56:18 | CRITICAL | MainThread | tftp | critical
