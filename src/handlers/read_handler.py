@@ -14,6 +14,8 @@ from utils import (
     PacketFormatError,
 )
 
+from logger_setup import logger
+
 def handle_rrq(session_sock, client_addr: tuple[str, int], basename:str, mode: str = "octet"):
     path = os.path.join(SERVER_ROOT, basename)
 
@@ -40,16 +42,19 @@ def handle_rrq(session_sock, client_addr: tuple[str, int], basename:str, mode: s
                         ack_pkt, addr = session_sock.recvfrom(4 + 32)
                     except socket.timeout :
                         if attempts >= MAX_RETRIES :
-                            print("[RRQ] Abort empty-file retries exceeded")
+                            logger.error("[RRQ] Abort empty-file retries exceeded")
+                            # print("[RRQ] Abort empty-file retries exceeded")
                             session_sock.sendto(
                                 build_error(ERR_NOT_DEFINED, "Timeout"),
                                 client_addr
                             )
                             return
-                        print(f"[RRQ] Timeout block={block} retry={attempts}")
+                        logger.warning(f"[RRQ] Timeout block={block} retry={attempts}")
+                        # print(f"[RRQ] Timeout block={block} retry={attempts}")
                         continue
                     except OSError as e :
-                        print(f"[RRQ] Socket error block={block}: {e}")
+                        logger.exception(f"[RRQ] Socket error block={block}")
+                        # print(f"[RRQ] Socket error block={block}: {e}")
                         return
                     if addr != client_addr :
                         session_sock.sendto(
@@ -60,12 +65,14 @@ def handle_rrq(session_sock, client_addr: tuple[str, int], basename:str, mode: s
                     try:
                         ack_block = parse_ack(ack_pkt)
                     except PacketFormatError as e:
-                        print(f"[RRQ] {e} Ignore")
+                        logger.exception(f"[RRQ] Ignore PacketFormatError")
+                        # print(f"[RRQ] {e} Ignore")
                         continue
                     if ack_block != block:
                         continue
                     if ack_block == block and addr == client_addr:
-                        print("[RRQ] Done empty file")
+                        logger.info("[RRQ] Done empty file")
+                        # print("[RRQ] Done empty file")
                         return
                     
             # 不是空文件，则需要将read的第一块回退，重新进入原始循环处理
@@ -86,7 +93,8 @@ def handle_rrq(session_sock, client_addr: tuple[str, int], basename:str, mode: s
                         ack_pkt, addr = session_sock.recvfrom(4 + 32)
                     except socket.timeout:# 捕获超时错误
                         if attempts >= MAX_RETRIES:
-                            print(f"[RRQ] abort block={block} retries={attempts}")
+                            logger.error(f"[RRQ] abort block={block} retries={attempts}")
+                            # print(f"[RRQ] abort block={block} retries={attempts}")
                             # 发送超时错误便于客户端快速结束
                             try:
                                 session_sock.sendto(
@@ -96,14 +104,17 @@ def handle_rrq(session_sock, client_addr: tuple[str, int], basename:str, mode: s
                             except OSError:
                                 pass
                             return
-                        print(f"[RRQ] time out block={block} retries={attempts}")
+                        logger.warning(f"[RRQ] Timeout block={block} retries={attempts}")
+                        # print(f"[RRQ] time out block={block} retries={attempts}")
                         continue
                     except OSError as e:# 仅在系统层IO问题时终止
-                        print(f"[RRQ] Socket Error Block={block}: {e}")
+                        logger.exception(f"[RRQ] Socket Error Block={block}")
+                        # print(f"[RRQ] Socket Error Block={block}: {e}")
                         return
 
                     if addr != client_addr:
-                        print(f"[RRQ] Ignore foreign addr {addr}")
+                        logger.error(f"[RRQ] Ignore foreign addr {addr}")
+                        # print(f"[RRQ] Ignore foreign addr {addr}")
                         err = build_error(ERR_UNKNOWN_TRANSFER_ID, "Unknown transfer ID")
                         session_sock.sendto(err, addr)
                         continue
@@ -111,17 +122,20 @@ def handle_rrq(session_sock, client_addr: tuple[str, int], basename:str, mode: s
                     try:
                         ack_block = parse_ack(ack_pkt)
                     except PacketFormatError as e:
-                        print(f"[RRQ] {e} Ignore")
+                        logger.exception(f"[RRQ] Ignore PacketFormatError")
+                        # print(f"[RRQ] {e} Ignore")
                         continue
                     
                     if ack_block != block:
-                        print(f"[RRQ] Wrong ACK block={ack_block} expect={block}")
+                        logger.warning(f"[RRQ] Wrong ACK block={ack_block} expect={block}")
+                        # print(f"[RRQ] Wrong ACK block={ack_block} expect={block}")
                         continue
                     break
 
                 # 如果最后一块小于BLOCK_SIZE，说明传输完成，因此退出
                 if len(chunk) < BLOCK_SIZE:
-                    print(f"[RRQ] Done file='{basename}' last_block={block}")
+                    logger.info(f"[RRQ] Done file='{basename}' last_block={block}")
+                    # print(f"[RRQ] Done file='{basename}' last_block={block}")
                     return
                 
                 nextb = f.read(1)
@@ -138,9 +152,11 @@ def handle_rrq(session_sock, client_addr: tuple[str, int], basename:str, mode: s
                             ack_pkt, addr = session_sock.recvfrom(4 + 32)
                         except socket.timeout:
                             if attempts >= MAX_RETRIES:
-                                print(f"[RRQ] Abort final-empty block={next_block} retry={attempts}")
+                                logger.error(f"[RRQ] Abort final-empty block={next_block} retry={attempts}")
+                                # print(f"[RRQ] Abort final-empty block={next_block} retry={attempts}")
                                 return
-                            print(f"[RRQ] Timeout final-empty block={next_block} retry={attempts}")
+                            logger.warnning(f"[RRQ] Timeout final-empty block={next_block} retry={attempts}")
+                            # print(f"[RRQ] Timeout final-empty block={next_block} retry={attempts}")
                             continue
                         if addr != client_addr:
                             # 忽略陌生 TID, 继续等待正确 ACK
@@ -152,10 +168,12 @@ def handle_rrq(session_sock, client_addr: tuple[str, int], basename:str, mode: s
                         try:
                             ack_block = parse_ack(ack_pkt)
                         except PacketFormatError as e:
-                            print(f"[RRQ] {e} Ignore")
+                            logger.exception("[RRQ] Ignore PacketFormatError")
+                            # print(f"[RRQ] {e} Ignore")
                             continue
                         if ack_block == next_block :
-                            print(f"[RRQ] Done file='{basename}' final-empty block={next_block}")
+                            logger.info(f"[RRQ] Done file='{basename}' final-empty block={next_block}")
+                            # print(f"[RRQ] Done file='{basename}' final-empty block={next_block}")
                             return
                 else:
                     f.seek(-1,1)

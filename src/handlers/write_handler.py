@@ -12,6 +12,8 @@ from utils import (
     PacketFormatError,
 )
 
+from logger_setup import logger
+
 def handle_wrq(session_sock:socket.socket, client_addr: tuple[str, int], 
                 basename: str, mode: str = "octet", 
                 allow_overwrite:bool = False):
@@ -51,13 +53,16 @@ def handle_wrq(session_sock:socket.socket, client_addr: tuple[str, int],
             except socket.timeout:
                 attempts += 1
                 if attempts > MAX_RETRIES:
-                    print(f"[WRQ] Timeout exceeded, abort file='{basename}'")
+                    logger.error(f"[WRQ] Timeout exceeded, abort file='{basename}'")
+                    # print(f"[WRQ] Timeout exceeded, abort file='{basename}'")
                     session_sock.sendto(build_error(ERR_NOT_DEFINED, "Timeout"), client_addr)
                     return
+                logger.warning(f"[RRQ] Timeout retry={attempts}")
                 session_sock.sendto(build_ack(last_acked), client_addr)
                 continue
             except OSError as e :# 处理系统级ERROR
-                print(f"[WRQ] Socket error: {e}")
+                logger.exception(f"[WRQ] Socket error")
+                # print(f"[WRQ] Socket error: {e}")
                 return 
             
             attempts = 0# 如果到达这一步，说明没出错，接收到数据，因此重置attempts
@@ -72,7 +77,8 @@ def handle_wrq(session_sock:socket.socket, client_addr: tuple[str, int],
             try:
                 block, data = parse_data(pkt)
             except PacketFormatError as e:
-                print(f"[WRQ] Bad DATA packet: {e}")
+                logger.exception(f"[WRQ] Bad DATA packet")
+                # print(f"[WRQ] Bad DATA packet: {e}")
                 continue
                 
             if block == expected_block:
@@ -103,7 +109,8 @@ def handle_wrq(session_sock:socket.socket, client_addr: tuple[str, int],
 
                 if len(data) < BLOCK_SIZE:
                     success = True
-                    print(f"[WRQ] Done file='{basename}' blocks={block} bytes={total}")
+                    logger.info(f"[WRQ] Done file='{basename}' blocks={block} bytes={total}")
+                    # print(f"[WRQ] Done file='{basename}' blocks={block} bytes={total}")
                     break
             elif block == last_acked:
                 # 与上一次ACK的block一致
@@ -115,7 +122,8 @@ def handle_wrq(session_sock:socket.socket, client_addr: tuple[str, int],
                 continue
             else:
                 # 其余情况忽略该块
-                print(f"[WRQ] Unexpected block={block} expected={expected_block}")
+                logger.warning(f"[WRQ] Unexpected block={block} expected={expected_block}")
+                # print(f"[WRQ] Unexpected block={block} expected={expected_block}")
                 continue
     finally:
         f.close()
@@ -123,7 +131,8 @@ def handle_wrq(session_sock:socket.socket, client_addr: tuple[str, int],
             try:
                 os.replace(tmp_path, final_path)
             except Exception as e:
-                print(f"[WRQ] rename failed: {e}")
+                logger.exception(f"[WRQ] rename failed")
+                # print(f"[WRQ] rename failed: {e}")
         else:
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)

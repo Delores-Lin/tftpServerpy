@@ -20,7 +20,7 @@ from utils import (
     PacketFormatError, UnsupportedModeError, InvalidFilenameError
 )
 
-
+from logger_setup import logger
 
 # 精确控制并发，精确限制线程数
 _session_sem = threading.BoundedSemaphore(MAX_SESSIONS)
@@ -38,14 +38,16 @@ def _run_session(opcode:int, session_sock:socket.socket, client_addr, basename:s
         else:
             handle_wrq(session_sock, client_addr, basename, mode)
     except Exception as e:
-        print(f"[SESSION] Error {client_addr} {basename}: {e!r}")
+        logger.exception(f"[SESSION] Error {client_addr} {basename}")
+        # print(f"[SESSION] Error {client_addr} {basename}: {e!r}")
         try:
             session_sock.sendto(
                 build_error(ERR_ILLEGAL_TFTP_OPERATION, "Session Error: {e}"),
                 client_addr
             )
         except Exception as se:
-            print(f"[SESSION] Send error packet failed: {se}")
+            logger.exception(f"[SESSION] Send error packet failed: {se}")
+            # print(f"[SESSION] Send error packet failed: {se}")
         traceback.print_exc()
     finally:
         with _active_lock:
@@ -63,7 +65,8 @@ def serve_forever():
         # 防止程序重启时“Address already in use”
     sock.bind((HOST, PORT))
     sock.settimeout(1.0)
-    print(f"[MAIN] TFTP server is listening on {HOST}:{PORT}")
+    logger.info(f"[MAIN] TFTP server is listening on {HOST}:{PORT}")
+    # print(f"[MAIN] TFTP server is listening on {HOST}:{PORT}")
 
     while not _shutdown:
         try:
@@ -76,9 +79,14 @@ def serve_forever():
             try:
                 opcode, filename, mode = parse_rrq_wrq(data)
                 basename = sanitize_filename(filename)
-                print( f"[MAIN] {client_addr} ->"
-                        f"{"RRQ" if opcode == OP_RRQ else "WRQ"} filename = '{filename}' "
-                        f"mode= '{mode}' santized= '{basename}' ")
+                logger.info(
+                    f"[MAIN] {client_addr} ->"
+                    f"{"RRQ" if opcode == OP_RRQ else "WRQ"} filename = '{filename}' "
+                    f"mode= '{mode}' santized= '{basename}' "
+                )
+                # print( f"[MAIN] {client_addr} ->"
+                #         f"{"RRQ" if opcode == OP_RRQ else "WRQ"} filename = '{filename}' "
+                #         f"mode= '{mode}' santized= '{basename}' ")
                 
                 # 设置并发上限
                 if not _session_sem.acquire(blocking=False):
@@ -97,6 +105,7 @@ def serve_forever():
                         build_error(ERR_ILLEGAL_TFTP_OPERATION, f"Session Bind Fail"),
                         client_addr
                     )
+                    logger.exception("[MAIN] Session Bind Fail")
                     _session_sem.release()
                     session_sock.close()
                     continue
@@ -112,12 +121,14 @@ def serve_forever():
                     t.start()
                     with _active_lock :
                         approx = _active_count + 1
-                    print(f"[MAIN] Spawned {t.name} (approx active={approx})")
+                    logger.info(f"[MAIN] Spawned {t.name} (approx active={approx})")
+                    # print(f"[MAIN] Spawned {t.name} (approx active={approx})")
                 except RuntimeError as e:
                     sock.sendto(
                         build_error(ERR_ACCESS_DENIED, "Server Cannot Create"),
                         client_addr
                     )
+                    logger.info("[MAIN] Server Cannot Create")
                     _session_sem.release()
                     session_sock.close()
                     continue
@@ -139,12 +150,15 @@ def serve_forever():
                 sock.sendto(err, client_addr)
                 traceback.print_exc()
         except KeyboardInterrupt:
-            print("\n[MAIN] Shutdown Requested")
+            logger.exception("\n[MAIN] Shutdown Requested")
+            # print("\n[MAIN] Shutdown Requested")
             break
         except Exception as e:
-            print(f"[MAIN] Loop Error: {e}")
+            logger.exception(f"[MAIN] Loop Error")
+            # print(f"[MAIN] Loop Error: {e}")
             traceback.print_exc()
-    print("[MAIN] Server Exiting")
+    logger.info("[MAIN] Server Exiting")
+    # print("[MAIN] Server Exiting")
 
 
 if __name__ == "__main__":
